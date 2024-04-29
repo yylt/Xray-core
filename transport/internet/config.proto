@@ -120,4 +120,6 @@ message SocketConfig {
   bool tcp_no_delay = 18;
 
   bool tcp_mptcp = 19;
+
+  bool non_block = 20;
 }

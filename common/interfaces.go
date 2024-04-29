@@ -66,3 +66,18 @@ func (cc ChainedClosable) Close() error {
 	}
 	return errors.Combine(errs...)
 }
+
+// CustomClosable is a Closable function.
+type CustomClosable func() error
+
+func NewCustomClosable(fn func() error) CustomClosable {
+	return CustomClosable(fn)
+}
+
+// Close implements Closable.
+func (cc CustomClosable) Close() error {
+	if cc != nil {
+		return cc()
+	}
+	return nil
+}

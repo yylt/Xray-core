@@ -668,6 +668,7 @@ type SocketConfig struct {
 	V6only               bool        `json:"v6only"`
 	Interface            string      `json:"interface"`
 	TcpMptcp             bool        `json:"tcpMptcp"`
+	NonBlock             bool        `json:"nonBlock"`
 }
 
 // Build implements Buildable.
@@ -742,6 +743,7 @@ func (c *SocketConfig) Build() (*internet.SocketConfig, error) {
 		V6Only:               c.V6only,
 		Interface:            c.Interface,
 		TcpMptcp:             c.TcpMptcp,
+		NonBlock:             c.NonBlock,
 	}, nil
 }
 
