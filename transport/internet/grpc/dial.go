@@ -2,7 +2,9 @@ package grpc
 
 import (
 	"context"
+	"fmt"
 	"reflect"
+	"strconv"
 	"sync"
 	"time"
 
@@ -19,9 +21,18 @@ import (
 	"github.com/xtls/xray-core/transport/internet/tls"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/backoff"
+	_ "google.golang.org/grpc/balancer/leastrequest"
+	_ "google.golang.org/grpc/balancer/ringhash"
+	_ "google.golang.org/grpc/balancer/roundrobin"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
+)
+
+var (
+	serviceConfig   = `{"loadBalancingConfig": [{"%s": {}}]}`
+	defaultBalancer = "round_robin"
+	defaultResolver = "dns"
 )
 
 func Dial(ctx context.Context, dest net.Destination, streamSettings *internet.MemoryStreamConfig) (stat.Connection, error) {
@@ -148,6 +159,29 @@ func getGrpcClient(ctx context.Context, dest net.Destination, streamSettings *in
 
 	dialOptions = append(dialOptions, grpc.WithTransportCredentials(insecure.NewCredentials()))
 
+	if grpcSettings.Resolve != "" {
+		defaultResolver = grpcSettings.Resolve
+	}
+	if grpcSettings.LoadBalance != "" {
+		defaultBalancer = grpcSettings.LoadBalance
+	}
+	dialOptions = append(dialOptions, grpc.WithDefaultServiceConfig(fmt.Sprintf(serviceConfig, defaultBalancer)))
+	switch grpcSettings.Encode {
+	case "zstd":
+		dialOptions = append(dialOptions, grpc.WithDefaultCallOptions(grpc.UseCompressor("zstd")))
+	case "gzip":
+		dialOptions = append(dialOptions, grpc.WithDefaultCallOptions(grpc.UseCompressor("gzip")))
+	case "lz4":
+		dialOptions = append(dialOptions, grpc.WithDefaultCallOptions(grpc.UseCompressor("lz4")))
+	}
+	if grpcSettings.Buffersize != "" {
+		bytesize, err := strconv.Atoi(grpcSettings.Buffersize)
+		if err != nil {
+			return nil, err
+		}
+		dialOptions = append(dialOptions, grpc.WithWriteBufferSize(bytesize))
+		dialOptions = append(dialOptions, grpc.WithReadBufferSize(bytesize))
+	}
 	authority := ""
 	if grpcSettings.Authority != "" {
 		authority = grpcSettings.Authority
@@ -178,7 +212,7 @@ func getGrpcClient(ctx context.Context, dest net.Destination, streamSettings *in
 	}
 
 	conn, err := grpc.NewClient(
-		"passthrough:///"+net.JoinHostPort(grpcDestHost, dest.Port.String()),
+		defaultResolver+":///"+net.JoinHostPort(grpcDestHost, dest.Port.String()),
 		dialOptions...,
 	)
 	if err == nil {
