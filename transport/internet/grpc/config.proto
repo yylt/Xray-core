@@ -12,4 +12,8 @@ message Config {
   bool permit_without_stream = 6;
   int32 initial_windows_size = 7;
   string user_agent = 8;
+  string resolve = 9;
+  string load_balance = 10;
+  string encode = 11;
+  string buffersize = 12;
 }

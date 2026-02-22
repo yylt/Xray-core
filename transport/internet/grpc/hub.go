@@ -2,7 +2,12 @@ package grpc
 
 import (
 	"context"
+	"strconv"
 	"time"
+
+	_ "github.com/mostynb/go-grpc-compression/lz4"
+	_ "github.com/mostynb/go-grpc-compression/zstd"
+	_ "google.golang.org/grpc/encoding/gzip"
 
 	goreality "github.com/xtls/reality"
 	"github.com/xtls/xray-core/common"
@@ -86,6 +91,13 @@ func Listen(ctx context.Context, address net.Address, port net.Port, settings *i
 	if config != nil {
 		// gRPC server may silently ignore TLS errors
 		options = append(options, grpc.Creds(credentials.NewTLS(config.GetTLSConfig(tls.WithNextProto("h2")))))
+	}
+	if grpcSettings.Buffersize != "" {
+		bytesize, err := strconv.Atoi(grpcSettings.Buffersize)
+		if err != nil {
+			return nil, err
+		}
+		options = append(options, grpc.WriteBufferSize(bytesize), grpc.ReadBufferSize(bytesize))
 	}
 	if grpcSettings.IdleTimeout > 0 || grpcSettings.HealthCheckTimeout > 0 {
 		options = append(options, grpc.KeepaliveParams(keepalive.ServerParameters{

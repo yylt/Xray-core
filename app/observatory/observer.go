@@ -196,7 +196,7 @@ func (o *Observer) probe(outbound string) ProbeResult {
 		errors.LogInfoInner(o.ctx, errorCollectorForRequest.UnderlyingError(), errorMessage)
 		return ProbeResult{Alive: false, LastErrorReason: errorMessage}
 	}
-	errors.LogInfo(o.ctx, "the outbound ", outbound, " is alive:", GETTime.Seconds())
+	errors.LogWarning(o.ctx, "the outbound ", outbound, " is alive:", GETTime.Seconds())
 	return ProbeResult{Alive: true, Delay: GETTime.Milliseconds()}
 }
 
